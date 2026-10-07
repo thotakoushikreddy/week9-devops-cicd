@@ -31,33 +31,38 @@ pipeline {
         }
 
         stage('Package') {
-            steps {
-                echo 'Building Docker image...'
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
-            }
-        }
+    steps {
+        echo 'Building Docker image...'
+        sh '''
+            export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+            docker --version
+            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+        '''
+    }
+}
 
         stage('Push Docker Image') {
-            steps {
-                echo 'Pushing Docker image...'
+    steps {
+        echo 'Pushing Docker image...'
 
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'dockerhub-credentials',
+                usernameVariable: 'DOCKER_USERNAME',
+                passwordVariable: 'DOCKER_PASSWORD'
+            )
+        ]) {
 
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker logout
-                    '''
-                }
-            }
+            sh '''
+                export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+
+                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                docker logout
+            '''
         }
     }
+}
 
     post {
         success {
